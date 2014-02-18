@@ -78,24 +78,58 @@ class: center, middle, inverse
 Mye snakk om storeweb og lilleweb og at de skulle fungere sømløst.
 
 - Lilleweb kan ikke være på innlogget side
-    - TTL: Bruker blir alltid utlogget etter ca 1 time
+    - TTL: Innlogget bruker blir alltid utlogget etter ca 1 time
+    - Mye styr å måtte logge inn for å få en pris
 
 - Storeweb er på innlogget side
+    - Desktop
 
 - Skjema på storeweb skal prepopuleres fra lilleweb
 
 ---
-class: center, middle
 
-## Editor
-### [http://js-workshop.herokuapp.com](http://js-workshop.herokuapp.com)
+# Tekniske rammer
 
-## Slides
-### [http://gnab.github.com/js-workshop](http://gnab.github.com/js-workshop)
+Prosjektet hadde endel begrensninger med hensyn på valg av arkitektur og mye var satt.
 
-## Code
-### [http://github.com/gnab/js-workshop](http://github.com/gnab/js-workshop)
+- Java-backend
+    - To servere i par bak BigIP
+    - Session bør unngåes
+    - Sticky session er vanligst
 
+- Ingen database
+    - Nye databaser opprettes ikke for alle prosjekter
+
+---
+
+# Brukerhistorien
+
+    Som forhandler
+    skal jeg fra mobilen få pris på forsikring og finansiering
+    og når jeg logger på ForhandlerWeb med min bruker
+    skal jeg få de samme dataene inn i skjemaet
+    slik at jeg kan forsette med bestillingen uten å måtte fylle ut på nytt
+
+---
+
+# Hazelcast
+
+### pros
+- Minnebasert cluster Key/Value-map
+- Krever ingen database eller serveroppsett
+- 1 jar dependency rett i java backend
+- Auto eviction på TTL
+
+
+### cons
+- Data blir ikke persistert, ingen garantert løsning (men det kan backes av en DB).
+
+
+---
+
+class: center, middle, inverse
+
+# Demo
 
 </textarea>
 <script>
