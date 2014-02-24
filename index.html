@@ -131,6 +131,44 @@ class: center, middle, inverse
 
 # Demo
 
+
+---
+
+class: center, middle, inverse
+
+### Lag Hazelcast-instance
+
+``` java
+public class CacheManagerFactory {
+
+    public CacheManager createCacheManager() {
+    HazelcastInstance instance = Hazelcast.getHazelcastInstanceByName(cacheName);
+
+    if (instance == null) {
+
+    instance = Hazelcast.newHazelcastInstance(new Config()
+    .setInstanceName(cacheName)
+    .setProperty("hazelcast.logging.type", "slf4j")
+    .setGroupConfig(new GroupConfig(username, password))
+    .setNetworkConfig(
+    new NetworkConfig()
+    .setPortAutoIncrement(true)
+    .setPort(this.hazelcastPort)
+    .setJoin(new JoinConfig()
+    .setMulticastConfig(new MulticastConfig().setEnabled(false))
+    .setTcpIpConfig(new TcpIpConfig().setEnabled(true).setMembers(clusterIPs))
+    )
+    )
+    .addMapConfig(new MapConfig("SOKNAD_DRAFTS").setMaxIdleSeconds(12 * TIME).setTimeToLiveSeconds(12 * TIME))
+    );
+    }
+
+    return new HazelcastCacheManager(instance);
+    }
+}
+```
+
+
 </textarea>
 <script>
     var slideshow = remark.create({ highlightLanguage: 'java', ratio:"16:9"});
