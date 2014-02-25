@@ -59,6 +59,9 @@
         .pushdown {
             margin-top: 12em;
         }
+        p img[alt="danrobert"]{
+            width: 30%;
+        }
     </style>
 </head>
 <body>
@@ -71,19 +74,18 @@ class: center, middle, inverse
 
 ---
 
-    # Brukerhistorien
+    # Bilselgeren
 
-    Som bilforhandler
-    når jeg fra mobilen beregner pris på forsikring og finansiering
-    og når etterpå jeg logger meg på ForhandlerWeb med min bruker
-    skal jeg få de samme dataene inn i skjemaet
-    slik at jeg kan forsette med bestillingen uten å måtte fylle ut på nytt
+    Som bilselger
+    skal jeg når som helst kunne beregne pris på lån og forsikring
+    slik at jeg alltid kan gjøre et salg
 
----
+![danrobert](https://a2-images.myspacecdn.com/images03/23/2faf3f62372849d197749f4b6436e82d/full.jpg)
+
+
+???
 
 # Kravene
-
-Mye snakk om storeweb og lilleweb og at de skulle fungere sømløst.
 
 - Lilleweb kan ikke være på innlogget side
     - TTL: Innlogget bruker blir alltid utlogget etter ca 1 time
@@ -97,8 +99,6 @@ Mye snakk om storeweb og lilleweb og at de skulle fungere sømløst.
 ---
 
 # Tekniske rammer
-
-Prosjektet hadde endel begrensninger med hensyn på valg av arkitektur og mye var satt.
 
 - Java-backend
     - To servere i par bak BigIP
@@ -121,14 +121,6 @@ Prosjektet hadde endel begrensninger med hensyn på valg av arkitektur og mye va
 
 ### cons
 - Data blir ikke persistert, ingen garantert løsning (men det kan backes av en DB).
-
-
----
-
-class: center, middle, inverse
-
-# Demo
-
 
 ---
 
@@ -182,6 +174,30 @@ public class CacheManagerFactory {
 ```
 
 ---
+### Jersey resource
+```
+@Produces("application/json")
+public DraftResource{
+    @Inject DraftRepository repo;
+
+    @POST
+    public Response store(@HeaderParam("X-REQUESTED-BY") String token, String object){
+        Validate.notNull(token, "token missing");
+        repo.store(token, object);
+        return Response.ok().build();
+    }
+
+    @GET @RolesAllowed("AUTHORISED") //Løses gjerne av web.xml eller Webseal
+    public Response fetch(@Context Bruker bruker){
+        String obj = repo.fetch(bruker.getToken());
+        if(obj == null) return Response.ok("{}").build();
+
+        return Response.ok(obj).build();
+    }
+}
+```
+
+---
 ### Lage et token og sikkerhet
 
 - SHA-1 hash av remoteUser (normalt en e-post)
@@ -191,6 +207,13 @@ public class CacheManagerFactory {
 
 - Put fra åpne sider sjekker ikke data og vil alltid returnere http 200 OK.
 - Fetch fra innloggede sider sjekker alltid data mot json-object. function() et al. vil kaste Json-exception.
+
+---
+
+class: center, middle, inverse
+
+# Demo
+
 
 ---
 class: center, middle, inverse
