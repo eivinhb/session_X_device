@@ -20,7 +20,7 @@
             margin-top: 10px;
         }
         h1 { font-size: 2.5em; }
-        h2 { font-size: 2em; }
+        h2 { font-size: 1.6em; margin-top: 30px; line-height: 1.6em; }
         h3 { font-size: 1.6em; }
 
         .inverse {
@@ -30,7 +30,6 @@
         }
         .inverse h1, .inverse h2 {
             color: #f3f3f3;
-            line-height: 0.8em;
         }
 
         pre {
@@ -72,6 +71,15 @@ class: center, middle, inverse
 
 ---
 
+    # Brukerhistorien
+
+    Som bilforhandler
+    når jeg fra mobilen beregner pris på forsikring og finansiering
+    og når etterpå jeg logger meg på ForhandlerWeb med min bruker
+    skal jeg få de samme dataene inn i skjemaet
+    slik at jeg kan forsette med bestillingen uten å måtte fylle ut på nytt
+
+---
 
 # Kravene
 
@@ -102,16 +110,6 @@ Prosjektet hadde endel begrensninger med hensyn på valg av arkitektur og mye va
 
 ---
 
-# Brukerhistorien
-
-    Som forhandler
-    skal jeg fra mobilen få pris på forsikring og finansiering
-    og når jeg logger på ForhandlerWeb med min bruker
-    skal jeg få de samme dataene inn i skjemaet
-    slik at jeg kan forsette med bestillingen uten å måtte fylle ut på nytt
-
----
-
 # Hazelcast
 
 ### pros
@@ -119,7 +117,7 @@ Prosjektet hadde endel begrensninger med hensyn på valg av arkitektur og mye va
 - Krever ingen database eller serveroppsett
 - 1 jar dependency rett i java backend
 - Auto eviction på TTL
-
+- Dynamic state, like java elsewhere.
 
 ### cons
 - Data blir ikke persistert, ingen garantert løsning (men det kan backes av en DB).
@@ -134,40 +132,77 @@ class: center, middle, inverse
 
 ---
 
-class: center, middle, inverse
+class: middle
 
 ### Lag Hazelcast-instance
 
 ``` java
 public class CacheManagerFactory {
 
-    public CacheManager createCacheManager() {
-    HazelcastInstance instance = Hazelcast.getHazelcastInstanceByName(cacheName);
+    public HazelcastInstance createCacheManager() {
+        HazelcastInstance instance = Hazelcast.newHazelcastInstance(
+            new Config()
+            .setInstanceName(cacheName)
+            .setGroupConfig(new GroupConfig(username, password))
+            .addMapConfig(
+                new MapConfig("DRAFTS")
+                    .setMaxIdleSeconds(12 * TIME)
+                    .setTimeToLiveSeconds(12 * TIME)));
+        }
 
-    if (instance == null) {
+        return instance;
+    }
+}
+```
+---
 
-    instance = Hazelcast.newHazelcastInstance(new Config()
-    .setInstanceName(cacheName)
-    .setProperty("hazelcast.logging.type", "slf4j")
-    .setGroupConfig(new GroupConfig(username, password))
-    .setNetworkConfig(
-    new NetworkConfig()
-    .setPortAutoIncrement(true)
-    .setPort(this.hazelcastPort)
-    .setJoin(new JoinConfig()
-    .setMulticastConfig(new MulticastConfig().setEnabled(false))
-    .setTcpIpConfig(new TcpIpConfig().setEnabled(true).setMembers(clusterIPs))
-    )
-    )
-    .addMapConfig(new MapConfig("SOKNAD_DRAFTS").setMaxIdleSeconds(12 * TIME).setTimeToLiveSeconds(12 * TIME))
-    );
+### Wrap Hazelcast med CRUD-metoder for din applikasjon
+``` java
+@Repostitory public class DraftRepository{
+
+    @Inject private HazelcastInstance instance;
+
+    public void store(String token, String object){
+        instance.getMap("DRAFTS").put(token, object);
     }
 
-    return new HazelcastCacheManager(instance);
+    public String fetch(String token){
+        String res = instance.getMap("DRAFTS").get(token);
+        if(res != null){
+            try{
+                new JSONObject(res);
+                return res;
+            } catch(Exception e){
+                instance.getMap("DRAFTS").remove(token);
+            }
+        }
+        return null;
     }
 }
 ```
 
+---
+### Lage et token og sikkerhet
+
+- SHA-1 hash av remoteUser (normalt en e-post)
+    - Statisk salt, random generert og ganske langt
+    - Mange 1000 iterasjoner
+    - Substring av resultat regnet som godt nok
+
+- Put fra åpne sider sjekker ikke data og vil alltid returnere http 200 OK.
+- Fetch fra innloggede sider sjekker alltid data mot json-object. function() et al. vil kaste Json-exception.
+
+---
+class: center, middle, inverse
+# That´s it?
+
+## Ja, selvfølgelig! Kast ut DB2, PostgreSQL, Redis eller hva du bruker for mellomlagring og kjør Hazelcast for din sesjon på kryss av sesjoner og deviser!
+
+---
+
+class: center, middle, inverse
+
+### Ingen spørsmål.
 
 </textarea>
 <script>
